@@ -1,0 +1,159 @@
+{
+  "bomFormat": "CycloneDX-Crypto",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-20T10:00:00Z",
+    "component": {
+      "name": "hybrid-transition-service",
+      "version": "3.1.0",
+      "type": "container",
+      "purl": "pkg:docker/acme/hybrid-transition-service@3.1.0"
+    },
+    "tools": [
+      { "name": "cbomkit-scanner", "version": "0.5.0" }
+    ]
+  },
+  "components": [
+    {
+      "type": "crypto-asset",
+      "name": "X25519-ML-KEM-768",
+      "bom-ref": "crypto-hybrid-kem",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-encapsulation",
+          "variant": "X25519-ML-KEM-768",
+          "keySize": 768,
+          "nistQuantumSecurityLevel": 3,
+          "pqcReady": true,
+          "classicalSecurityBits": 192,
+          "quantumSecurityBits": 192,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/hybrid_kem.py",
+        "lineNumber": 20,
+        "confidence": 0.95
+      },
+      "dependencies": [
+        {
+          "library": "oqs-provider",
+          "version": "0.6.0",
+          "purl": "pkg:generic/oqs-provider@0.6.0"
+        },
+        {
+          "library": "openssl",
+          "version": "3.3.0",
+          "purl": "pkg:generic/openssl@3.3.0"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "ML-DSA-65",
+      "bom-ref": "crypto-mldsa-65",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "digital-signature",
+          "variant": "ML-DSA",
+          "keySize": 65,
+          "nistQuantumSecurityLevel": 3,
+          "pqcReady": true,
+          "classicalSecurityBits": 192,
+          "quantumSecurityBits": 192,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/signer.py",
+        "lineNumber": 15,
+        "confidence": 0.96
+      },
+      "dependencies": [
+        {
+          "library": "liboqs",
+          "version": "0.10.0",
+          "purl": "pkg:generic/liboqs@0.10.0"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "AES-256-GCM",
+      "bom-ref": "crypto-aes-256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "symmetric-encryption",
+          "variant": "AES",
+          "keySize": 256,
+          "mode": "GCM",
+          "nistQuantumSecurityLevel": 1,
+          "pqcReady": true,
+          "classicalSecurityBits": 256,
+          "quantumSecurityBits": 128,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/data_encrypt.py",
+        "lineNumber": 10,
+        "confidence": 0.99
+      }
+    },
+    {
+      "type": "crypto-asset",
+      "name": "SHA-256",
+      "bom-ref": "crypto-sha256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "variant": "SHA-256",
+          "nistQuantumSecurityLevel": 1,
+          "pqcReady": true,
+          "classicalSecurityBits": 256,
+          "quantumSecurityBits": 128,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/hasher.py",
+        "lineNumber": 8,
+        "confidence": 0.99
+      }
+    },
+    {
+      "type": "crypto-asset",
+      "name": "TLS-1.3-Hybrid",
+      "bom-ref": "proto-tls-13-hybrid",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "1.3",
+          "cipherSuites": [
+            {
+              "name": "TLS_AES_256_GCM_SHA384_X25519_ML-KEM-768",
+              "algorithms": ["X25519-ML-KEM-768", "AES-256-GCM", "SHA384"],
+              "pqcReady": true
+            }
+          ]
+        }
+      },
+      "evidence": {
+        "source": "configuration",
+        "filePath": "config/tls.conf",
+        "lineNumber": 1,
+        "confidence": 0.97
+      }
+    }
+  ]
+}

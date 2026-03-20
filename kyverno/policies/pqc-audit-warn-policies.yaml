@@ -1,0 +1,163 @@
+# =============================================================================
+# PQC Audit/Warn Policies - Image Attestation Based
+#
+# These policies run in Audit mode. They inspect the CBOM attestation on
+# images to flag non-critical issues without blocking deployment.
+# =============================================================================
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-audit-weak-symmetric-keys
+  annotations:
+    policies.kyverno.io/title: Audit Weak Symmetric Key Sizes in Image CBOM
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Audits images whose CBOM attestation shows symmetric key sizes below
+      256 bits. Under Grover's algorithm, AES-128 provides only 64 bits of
+      quantum security. This policy warns but does not block.
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: audit-small-symmetric-keys
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    # minSymmetricKeyBits must be >= 256 for quantum resilience
+                    - key: "{{ cryptoInventory.minSymmetricKeyBits }}"
+                      operator: GreaterThanOrEquals
+                      value: 256
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-audit-weak-hash-in-image
+  annotations:
+    policies.kyverno.io/title: Audit Weak Hash Functions in Image CBOM
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Audits images whose CBOM attestation includes weak hash algorithms
+      (MD5, SHA-1). These are already broken classically and provide no
+      quantum security.
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: audit-weak-hash-algorithms
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "MD5"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.hashAlgorithms }}"
+                    - key: "SHA-1"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.hashAlgorithms }}"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-audit-no-hybrid-mode
+  annotations:
+    policies.kyverno.io/title: Audit Missing Hybrid PQC Mode
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Audits images that use PQC algorithms without hybrid classical+PQC
+      key exchange. Hybrid mode (e.g., X25519+ML-KEM-768) provides
+      defense-in-depth during the PQC transition.
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: audit-hybrid-mode
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "{{ cryptoInventory.hybridMode }}"
+                      operator: Equals
+                      value: true
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-audit-deprecated-tls-in-image
+  annotations:
+    policies.kyverno.io/title: Audit Deprecated TLS Versions in Image CBOM
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Audits images whose CBOM attestation shows TLS versions below 1.3.
+      TLS versions below 1.3 rely on quantum-vulnerable key exchange.
+spec:
+  validationFailureAction: Audit
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: audit-deprecated-tls
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "1.0"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.minTlsVersion || '1.3' }}"
+                    - key: "1.1"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.minTlsVersion || '1.3' }}"

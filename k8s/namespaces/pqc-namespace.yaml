@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pqc-enforced
+  labels:
+    pqc.security.io/enforcement: enabled
+    app.kubernetes.io/part-of: pqc-security

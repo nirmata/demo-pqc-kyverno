@@ -1,0 +1,47 @@
+# Kyverno CLI test manifest for image attestation-based policies
+# Run with: kyverno test kyverno/tests/
+#
+# NOTE: These tests require actual signed attestations on images to work
+# with the Kyverno CLI. For offline testing, use the Python test suite:
+#   python3 tests/test_kyverno_policies.py
+#
+# The Python tests simulate the same verifyImages logic by building
+# attestation predicates from sample CBOMs and checking the conditions.
+name: pqc-image-policy-tests
+policies:
+  - ../policies/pqc-image-verification.yaml
+  - ../policies/pqc-audit-warn-policies.yaml
+  - ../policies/pqc-block-vulnerable-deployments.yaml
+resources:
+  - ../../k8s/deployments/vulnerable-deployment.yaml
+  - ../../k8s/deployments/compliant-deployment.yaml
+  - ../../k8s/deployments/hybrid-deployment.yaml
+  - ../../k8s/deployments/no-scan-deployment.yaml
+  - ../../k8s/deployments/weak-symmetric-deployment.yaml
+results:
+  # pqc-require-cbom-label: requires pqc.security.io/cbom-attested label
+  - policy: pqc-require-cbom-label
+    rule: require-cbom-scan-label
+    resource: legacy-payment-service
+    kind: Deployment
+    result: pass
+  - policy: pqc-require-cbom-label
+    rule: require-cbom-scan-label
+    resource: pqc-secure-api
+    kind: Deployment
+    result: pass
+  - policy: pqc-require-cbom-label
+    rule: require-cbom-scan-label
+    resource: hybrid-transition-service
+    kind: Deployment
+    result: pass
+  - policy: pqc-require-cbom-label
+    rule: require-cbom-scan-label
+    resource: unscanned-service
+    kind: Deployment
+    result: fail
+  - policy: pqc-require-cbom-label
+    rule: require-cbom-scan-label
+    resource: weak-symmetric-service
+    kind: Deployment
+    result: pass

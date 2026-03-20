@@ -1,0 +1,28 @@
+# This deployment should be BLOCKED by Kyverno image verification policies.
+# The image has NO CBOM attestation attached.
+# Kyverno verifyImages will reject it because no attestation matches
+# the predicateType: https://pqc.security.io/cbom/v1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unscanned-service
+  namespace: pqc-enforced
+  labels:
+    app: unscanned-service
+    app.kubernetes.io/part-of: pqc-security-demo
+    # Missing: pqc.security.io/cbom-attested label
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unscanned-service
+  template:
+    metadata:
+      labels:
+        app: unscanned-service
+    spec:
+      containers:
+        - name: unscanned
+          image: acme/unscanned-service:1.0.0
+          ports:
+            - containerPort: 8080

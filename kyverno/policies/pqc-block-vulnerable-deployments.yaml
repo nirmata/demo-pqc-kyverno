@@ -1,0 +1,43 @@
+# =============================================================================
+# PQC Enforcement Policies - Deployment/StatefulSet/DaemonSet level
+#
+# These policies work WITH the image-level verifyImages policies. They provide
+# a defense-in-depth layer by also checking deployment-level annotations that
+# are set by the CI/CD pipeline after CBOM analysis.
+#
+# For the primary enforcement mechanism (image attestation verification),
+# see pqc-image-verification.yaml.
+# =============================================================================
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-require-cbom-label
+  annotations:
+    policies.kyverno.io/title: Require CBOM Scan Label
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Requires all workloads to carry a label indicating CBOM scan status.
+      This is a lightweight gate that complements the image verification
+      policies. Set the label in CI/CD after CBOM attestation is attached.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-cbom-scan-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+      validate:
+        message: >-
+          {{request.object.kind}} {{request.object.metadata.name}} is missing
+          the 'pqc.security.io/cbom-attested' label. All workloads must have
+          their images scanned and attested with a CBOM before deployment.
+        pattern:
+          metadata:
+            labels:
+              pqc.security.io/cbom-attested: "true"

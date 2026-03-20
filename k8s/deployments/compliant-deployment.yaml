@@ -1,0 +1,31 @@
+# This deployment should be ALLOWED by Kyverno image verification policies.
+# The image acme/pqc-secure-api:1.0.0 has a CBOM attestation showing only
+# NIST PQC algorithms (ML-KEM-768, ML-DSA-65, SLH-DSA).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pqc-secure-api
+  namespace: pqc-enforced
+  labels:
+    app: pqc-secure-api
+    app.kubernetes.io/part-of: pqc-security-demo
+    pqc.security.io/cbom-attested: "true"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pqc-secure-api
+  template:
+    metadata:
+      labels:
+        app: pqc-secure-api
+    spec:
+      containers:
+        - name: secure-api
+          image: acme/pqc-secure-api:1.0.0
+          ports:
+            - containerPort: 8443
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"

@@ -1,0 +1,224 @@
+{
+  "bomFormat": "CycloneDX-Crypto",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-20T10:00:00Z",
+    "component": {
+      "name": "legacy-payment-service",
+      "version": "2.3.1",
+      "type": "container",
+      "purl": "pkg:docker/acme/legacy-payment-service@2.3.1"
+    },
+    "tools": [
+      { "name": "cbomkit-scanner", "version": "0.5.0" }
+    ]
+  },
+  "components": [
+    {
+      "type": "crypto-asset",
+      "name": "RSA-2048",
+      "bom-ref": "crypto-rsa-2048",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "asymmetric-encryption",
+          "variant": "RSA",
+          "keySize": 2048,
+          "padding": "OAEP",
+          "nistQuantumSecurityLevel": 0,
+          "pqcReady": false,
+          "classicalSecurityBits": 112,
+          "quantumSecurityBits": 0,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/payment_encrypt.py",
+        "lineNumber": 45,
+        "confidence": 0.95
+      },
+      "dependencies": [
+        {
+          "library": "openssl",
+          "version": "1.1.1w",
+          "purl": "pkg:generic/openssl@1.1.1w"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "ECDSA-P256",
+      "bom-ref": "crypto-ecdsa-p256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "digital-signature",
+          "variant": "ECDSA",
+          "keySize": 256,
+          "curve": "P-256",
+          "nistQuantumSecurityLevel": 0,
+          "pqcReady": false,
+          "classicalSecurityBits": 128,
+          "quantumSecurityBits": 0,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/signer.py",
+        "lineNumber": 23,
+        "confidence": 0.98
+      },
+      "dependencies": [
+        {
+          "library": "pyca/cryptography",
+          "version": "41.0.0",
+          "purl": "pkg:pypi/cryptography@41.0.0"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "ECDH-P256",
+      "bom-ref": "crypto-ecdh-p256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-agreement",
+          "variant": "ECDH",
+          "keySize": 256,
+          "curve": "P-256",
+          "nistQuantumSecurityLevel": 0,
+          "pqcReady": false,
+          "classicalSecurityBits": 128,
+          "quantumSecurityBits": 0,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/key_exchange.py",
+        "lineNumber": 67,
+        "confidence": 0.92
+      },
+      "dependencies": [
+        {
+          "library": "pyca/cryptography",
+          "version": "41.0.0",
+          "purl": "pkg:pypi/cryptography@41.0.0"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "DH-2048",
+      "bom-ref": "crypto-dh-2048",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-agreement",
+          "variant": "DH",
+          "keySize": 2048,
+          "nistQuantumSecurityLevel": 0,
+          "pqcReady": false,
+          "classicalSecurityBits": 112,
+          "quantumSecurityBits": 0,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "configuration",
+        "filePath": "config/tls.conf",
+        "lineNumber": 12,
+        "confidence": 0.90
+      },
+      "dependencies": [
+        {
+          "library": "openssl",
+          "version": "1.1.1w",
+          "purl": "pkg:generic/openssl@1.1.1w"
+        }
+      ]
+    },
+    {
+      "type": "crypto-asset",
+      "name": "TLS-1.2",
+      "bom-ref": "proto-tls-12",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "1.2",
+          "cipherSuites": [
+            {
+              "name": "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+              "algorithms": ["ECDHE", "RSA", "AES-128-GCM", "SHA256"],
+              "pqcReady": false
+            },
+            {
+              "name": "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+              "algorithms": ["DHE", "RSA", "AES-256-CBC", "SHA1"],
+              "pqcReady": false
+            }
+          ]
+        }
+      },
+      "evidence": {
+        "source": "configuration",
+        "filePath": "config/tls.conf",
+        "lineNumber": 1,
+        "confidence": 0.99
+      }
+    },
+    {
+      "type": "crypto-asset",
+      "name": "AES-256-GCM",
+      "bom-ref": "crypto-aes-256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "symmetric-encryption",
+          "variant": "AES",
+          "keySize": 256,
+          "mode": "GCM",
+          "nistQuantumSecurityLevel": 1,
+          "pqcReady": true,
+          "classicalSecurityBits": 256,
+          "quantumSecurityBits": 128,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/data_encrypt.py",
+        "lineNumber": 12,
+        "confidence": 0.99
+      }
+    },
+    {
+      "type": "crypto-asset",
+      "name": "SHA-256",
+      "bom-ref": "crypto-sha256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "variant": "SHA-256",
+          "nistQuantumSecurityLevel": 1,
+          "pqcReady": true,
+          "classicalSecurityBits": 256,
+          "quantumSecurityBits": 128,
+          "implementationLevel": "software"
+        }
+      },
+      "evidence": {
+        "source": "source-code",
+        "filePath": "src/crypto/hasher.py",
+        "lineNumber": 8,
+        "confidence": 0.99
+      }
+    }
+  ]
+}

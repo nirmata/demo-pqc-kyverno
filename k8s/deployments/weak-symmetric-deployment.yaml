@@ -1,0 +1,27 @@
+# This deployment passes enforce policies but triggers audit warnings.
+# The image CBOM attestation shows PQC for asymmetric crypto but AES-128
+# symmetric keys which have only 64 bits of quantum security.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weak-symmetric-service
+  namespace: pqc-enforced
+  labels:
+    app: weak-symmetric-service
+    app.kubernetes.io/part-of: pqc-security-demo
+    pqc.security.io/cbom-attested: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weak-symmetric-service
+  template:
+    metadata:
+      labels:
+        app: weak-symmetric-service
+    spec:
+      containers:
+        - name: weak-symmetric
+          image: acme/weak-symmetric-service:1.2.0
+          ports:
+            - containerPort: 8443

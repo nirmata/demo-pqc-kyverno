@@ -1,0 +1,214 @@
+# =============================================================================
+# PQC Image Verification Policies
+#
+# These policies use Kyverno's verifyImages to:
+#   1. Verify that every container image has a signed CBOM attestation
+#   2. Inspect the CBOM predicate inline to check for quantum-vulnerable algorithms
+#   3. Block images that fail PQC compliance without any deployment annotations
+#
+# The CBOM attestation is attached to images via cosign as an in-toto
+# attestation with predicateType: https://pqc.security.io/cbom/v1
+# =============================================================================
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-verify-image-cbom
+  annotations:
+    policies.kyverno.io/title: Verify Image CBOM Attestation & PQC Compliance
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: critical
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Verifies that container images carry a signed CBOM (Cryptographic Bill of
+      Materials) attestation and that the attestation shows no critical
+      quantum-vulnerable cryptographic algorithms. Images without a valid CBOM
+      attestation or with quantum-vulnerable crypto are denied admission.
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  rules:
+    # ── Rule 1: Verify CBOM attestation exists and is signed ──────────────
+    - name: verify-cbom-attestation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+                      # For key-based verification, replace keyless with:
+                      # - keys:
+                      #     publicKeys: |-
+                      #       -----BEGIN PUBLIC KEY-----
+                      #       <your cosign public key here>
+                      #       -----END PUBLIC KEY-----
+              conditions:
+                - all:
+                    # Attestation must contain a CBOM
+                    - key: "{{ cbom.bomFormat }}"
+                      operator: Equals
+                      value: "CycloneDX-Crypto"
+
+    # ── Rule 2: Block images with quantum-vulnerable deployments ──────────
+    - name: block-quantum-vulnerable-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    # Deployment must be explicitly allowed
+                    - key: "{{ pqcCompliance.deploymentAllowed }}"
+                      operator: Equals
+                      value: true
+
+    # ── Rule 3: Block images containing RSA ───────────────────────────────
+    - name: deny-rsa-in-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "RSA"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+                    - key: "RSA-2048"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+                    - key: "RSA-4096"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+
+    # ── Rule 4: Block images containing ECDSA ─────────────────────────────
+    - name: deny-ecdsa-in-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "ECDSA-P256"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+                    - key: "ECDSA-P384"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+
+    # ── Rule 5: Block images containing DH/ECDH ──────────────────────────
+    - name: deny-dh-in-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keyless:
+                        rekor:
+                          url: https://rekor.sigstore.dev
+              conditions:
+                - all:
+                    - key: "DH-2048"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+                    - key: "ECDH-P256"
+                      operator: AnyNotIn
+                      value: "{{ cryptoInventory.vulnerableAlgorithms }}"
+---
+# =============================================================================
+# Key-based variant for air-gapped / private registries
+# Uses a cosign public key instead of keyless Sigstore OIDC
+# =============================================================================
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pqc-verify-image-cbom-keyed
+  annotations:
+    policies.kyverno.io/title: Verify Image CBOM (Key-Based Signing)
+    policies.kyverno.io/category: Post-Quantum Cryptography
+    policies.kyverno.io/severity: critical
+    policies.kyverno.io/description: >-
+      Same as pqc-verify-image-cbom but uses a static cosign public key
+      for verification. Deploy this instead of the keyless variant when
+      using private registries or air-gapped environments.
+      Replace the placeholder public key with your actual cosign.pub.
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: verify-cbom-attestation-keyed
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "registry.example.com/*"  # Scope to your registry
+          attestations:
+            - type: https://pqc.security.io/cbom/v1
+              attestors:
+                - entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          REPLACE_WITH_YOUR_COSIGN_PUBLIC_KEY
+                          -----END PUBLIC KEY-----
+              conditions:
+                - all:
+                    - key: "{{ cbom.bomFormat }}"
+                      operator: Equals
+                      value: "CycloneDX-Crypto"
+                    - key: "{{ pqcCompliance.deploymentAllowed }}"
+                      operator: Equals
+                      value: true
+                    - key: "{{ cryptoInventory.vulnerableAlgorithms[] | length(@) }}"
+                      operator: Equals
+                      value: 0

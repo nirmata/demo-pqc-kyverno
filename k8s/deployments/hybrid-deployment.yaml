@@ -1,0 +1,30 @@
+# This deployment should be ALLOWED by Kyverno image verification policies.
+# The image uses hybrid classical+PQC mode (X25519+ML-KEM-768).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hybrid-transition-service
+  namespace: pqc-enforced
+  labels:
+    app: hybrid-transition-service
+    app.kubernetes.io/part-of: pqc-security-demo
+    pqc.security.io/cbom-attested: "true"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hybrid-transition-service
+  template:
+    metadata:
+      labels:
+        app: hybrid-transition-service
+    spec:
+      containers:
+        - name: hybrid-service
+          image: acme/hybrid-transition-service:3.1.0
+          ports:
+            - containerPort: 8443
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
